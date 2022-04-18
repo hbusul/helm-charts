@@ -22,6 +22,15 @@ replicas: 1
 # all the possible args can be found here: https://github.com/kubernetes/kube-state-metrics/blob/master/docs/cli-arguments.md
 extraArgs: []
 
+# Host to expose metrics on. (default "::")
+host: ""
+# Port to expose metrics on. If port is not specified, service.port is used instead.
+# Port and service.port can differ (e.g a sidecar can publish service.port)
+hostPort: ""
+
+# Sidecar containers
+sidecars: []
+
 service:
   port: 8080
   # Default to clusterIP for backward compatibility

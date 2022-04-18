@@ -39,6 +39,9 @@ spec:
       priorityClassName: {{ .Values.priorityClassName }}
     {{- end }}
       containers:
+{{- if .Values.sidecars }}
+{{ toYaml .Values.sidecars | indent 6 }}
+{{- end }}
       - name: {{ .Chart.Name }}
         {{- if .Values.autosharding.enabled }}
         env:
@@ -57,9 +60,10 @@ spec:
         - {{ . }}
         {{- end  }}
         {{-  end  }}
-        {{- if .Values.service.port }}
-        - --port={{ .Values.service.port | default 8080}}
-        {{-  end  }}
+        - --port={{ coalesce .Values.hostPort .Values.service.port 8080 }}
+        {{-  if .Values.host }}
+        - --host={{ .Values.host }}
+        {{-  end }}
         {{-  if .Values.collectors  }}
         - --resources={{ .Values.collectors | join "," }}
         {{-  end  }}
@@ -143,9 +147,26 @@ spec:
       tolerations:
 {{ toYaml .Values.tolerations | indent 8 }}
       {{- end }}
-      {{- if .Values.kubeconfig.enabled}}
+      {{- if or (or .Values.kubeconfig.enabled .Values.configmaps ) .Values.secrets }}
       volumes:
+      {{- end }}
+      {{- if .Values.kubeconfig.enabled }}
         - name: kubeconfig
           secret:
             secretName: {{ template "kube-state-metrics.fullname" . }}-kubeconfig
+      {{- end }}
+      {{- if .Values.configmaps }}
+      {{- range $_, $mount := .Values.configmaps }}
+        - name: {{ $mount.mountName }}
+          configMap:
+            name: {{ $mount.name }}
+      {{- end }}
+      {{- end }}
+      {{- if .Values.secrets }}
+      {{- range $_, $mount := .Values.secrets }}
+        - name: {{ $mount.mountName }}
+          secret:
+            secretName: {{ $mount.name }}
+            defaultMode: 0440
+      {{- end }}
       {{- end }}
